@@ -1,0 +1,31 @@
+---
+  - name: Install Filebeat and copy config files
+    hosts: webservers
+    remote_user: azadmin
+    become: true
+    tasks:
+      # Download the .deb file from artifacts.elastic.co
+      - name: Download .deb file
+        command: curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-7.4.0-amd64.deb
+
+      # Install the .dep file
+      - name: Install the .deb file
+        command: dpkg -i filebeat-7.4.0-amd64.deb
+
+      # Copy Filebeat config file from ANsible to WebVM's
+      - name: Copy filebeat config file from Ansible
+        copy:
+          src: /etc/ansible/files/filebeat-config.yml
+          dest: /etc/filebeat/filebeat.yml
+
+      # Use command module
+      - name: Enable and configure System Module
+        command: filebeat modules enable system
+
+      # Use command module
+      - name: Start filebeat
+        command: filebeat setup
+
+      # Use command module
+      - name: Start filebeat service
+        command: service filebeat start
