@@ -2,7 +2,7 @@
 
 The files in this repository were used to configure the network depicted below.
 
-(https://github.com/Nightwing99ktm/ELK-Stack-Project/blob/master/images/Completed%20ELK-Stack%20Diagram.png)
+![ELK-Stack Diagram](https://github.com/Nightwing99ktm/ELK-Stack-Project/blob/master/images/Completed%20ELK-Stack%20Diagram.png)
 
 These files have been tested and used to generate a live ELK deployment on Azure. They can be used to either recreate the entire deployment pictured above. Alternatively, select portions of the YAML file may be used to install only certain pieces of it, such as Filebeat.
 
@@ -96,7 +96,6 @@ What does Metricbeat record?
 - Metricbeat records metrics from the operating system and from services running on the server.
 
 The configuration details of each machine may be found below.
-_Note: Use the [Markdown Table Generator](http://www.tablesgenerator.com/markdown_tables) to add/remove values from the table_.
 
 | Name     | Function | IP Address | Operating System |
 |----------|----------|------------|------------------|
@@ -139,7 +138,7 @@ The playbook implements the following tasks:
 
 The following screenshot displays the result of running `docker ps` after successfully configuring the ELK instance.
 
-![Docker PS Output](images/ELK docker ps.jpg)
+![Docker PS Output](images/ELK_docker_ps.jpg)
 
 ### Target Machines & Beats
 This ELK server is configured to monitor the following machines:
@@ -160,13 +159,128 @@ These Beats allow us to collect the following information from each machine:
 In order to use the playbook, you will need to have an Ansible control node already configured. Assuming you have such a control node provisioned: 
 
 SSH into the control node and follow the steps below:
-- Copy the hosts file to /etc/ansible.
-- Update the hosts file to include a group notated by 
-- Run the playbook, and navigate to ____ to check that the installation worked as expected.
+- Copy the following YAML files to the Ansible control node: [Install-ELK](https://raw.githubusercontent.com/Nightwing99ktm/ELK-Stack-Project/master/install-elk.yml) | [Install-Filebeat](https://raw.githubusercontent.com/Nightwing99ktm/ELK-Stack-Project/master/playbooks/filebeat-playbook.yml) | [Install-Metricbeat](https://raw.githubusercontent.com/Nightwing99ktm/ELK-Stack-Project/master/playbooks/metricbeat-playbook.yml)
 
-_TODO: Answer the following questions to fill in the blanks:_
-- _Which file is the playbook? Where do you copy it?_
-- _Which file do you update to make Ansible run the playbook on a specific machine? How do I specify which machine to install the ELK server on versus which to install Filebeat on?_
-- _Which URL do you navigate to in order to check that the ELK server is running?
+```
+$ cd /etc/ansible
+$ mkdir files
 
-_As a **Bonus**, provide the specific commands the user will need to run to download the playbook, update the files, etc._
+# Clone Git Repository
+$ git clone https://github.com/Nightwing99ktm/ELK-Stack-Project
+
+# Move yml files into '/etc/ansible/files'
+$ cp Elk-Stack-Project/playbooks/* files/
+```
+
+- Update the hosts file to include the webservers and elk groups. Additionally, configure the IP address to match your machines.
+
+```
+$ cd /etc/ansible
+$ nano hosts
+
+# Ex 2: A collections of hosts belonging to the 'webservers' group
+[webservers]
+10.0.0.5 ansible_python_interpreter=/usr/bin/python3
+10.0.0.6 ansible_python_interpreter=/usr/bin/python3
+10.0.0.8 ansible_python_interpreter=/usr/bin/python3
+
+[elk]
+10.1.0.4 ansible_python_interpreter=/usr/bin/python3
+```
+
+- Run the instal-elk.yml file, and navigate to *http://[ELK-Public-IP]:5601/app/kibana#/home* to check that the installation worked as expected. (Ensure a Network Security Group rule exists allowing TCP traffic over Port 5601)
+
+```
+$ cd /etc/ansible/files
+$ ansible-playbook install-elk.yml
+```
+
+### Installing Filebeat
+- Navigate to your ELK server homepage.
+	- Click on Add Log Data
+	- Choose System Logs.
+	- Click on the DEB tab under Getting Started to view the correct Linux Filebeat installation instructions.
+
+- Within your Ansible container run the following command:
+
+```
+$ curl curl https://gist.githubusercontent.com/slape/5cc350109583af6cbe577bbcc0710c93/raw/eca603b72586fbe148c11f9c87bf96a63cb25760/Filebeat > /etc/ansible/files/filebeat-config.yml
+
+```
+-Open up the filebeat-config.yml to edit IP addresses
+
+```
+$ cd /etc/ansible/files
+$ nano filebeat-config.yml
+```
+
+- Navigate to line 1106 and replace the IP address with the IP address of your ELK machine.
+
+```
+output.elasticsearch:
+hosts: ["10.1.0.4:9200"]
+username: "elastic"
+passwork: "changeme"
+```
+
+- Scroll to line 1806 and replace the IP address with the IP address of your ELK machine.
+
+```
+setup.kibana:
+host: "10.1.0.4:5601"
+```
+
+- Within your Ansible container run the following commands to install Filebeat.
+
+```
+$ cd /etc/ansible/files
+$ ansible-playbook filebeat-playbook.yml
+```
+
+- Finally to confirm that the ELK stack is receiving logs, navigate back to the Filebeat installation page on the ELK server page, scroll to Step 5: Module Status and click Check Data.
+
+### Install Metricbeat
+- Navigate to your ELK server homepage.
+	- Click on Add Metric Data
+	- Click Docker Metrics
+	- Click on the DEB tab under Getting Started for the corredt Linux instructions.
+	
+- Within your Ansible container run the following command:
+
+```
+curl https://gist.githubusercontent.com/slape/58541585cc1886d2e26cd8be557ce04c/raw/0ce2c7e744c54513616966affb5e9d96f5e12f73/metricbeat > /etc/ansible/files/metricbeat-config.yml
+```
+
+- Open up the metricbeat-config.yml to edit the IP addresses
+
+```
+$ cd /etc/ansible/files
+$ nano metricbeat-config.yml
+```
+
+- Navigate to line 62 and replace the IP address with the IP address of your ELK machine
+
+```
+# This requires a Kibana endpoint configuration.
+setup.kibana:
+host: "10.1.0.4:5601"
+```
+
+- Navigate to line 95 and replace the IP address with the Ip address of your ELK machine
+
+```
+output.elasticsearch:
+# Array of hosts to connect to.
+hosts: ["10.1.0.4:9200"]
+username: "elastic"
+password: "changeme"
+```
+
+- Within your Ansible container run the following commands to install Metricbeat.
+
+```
+$ cd /etc/ansible/files
+$ ansible-playbook metricbeat-playbook.yml
+```
+
+- Finally to confirm that the playbook worked as expected, navigate back to the Metricbeat installation page on the ELK server page, scroll to Step 5: Module Status and click Check Data.
