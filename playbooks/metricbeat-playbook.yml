@@ -1,0 +1,30 @@
+---
+  - name: Install metricbeat and copy config files
+    hosts: webservers
+    remote_user: azadmin
+    become: true
+    # Download the Metricbeat .deb file
+      - name: Download the .deb file
+        command: curl -L -O https://artifacts.elastic.co/downloads/beats/metricbeat/metricbeat-7.4.0-amd64.deb
+
+      # Install the .deb file
+      - name: Install the .deb file
+        command: dpkg -i metricbeat-7.4.0-amd64.deb
+
+      # Copy Metricbeat config file
+      - name: Copy Metricbeat config file from ansible
+        copy:
+          src: /etc/ansible/files/metricbeat-config.yml
+          dest: /etc/metricbeat/metricbeat.yml
+
+      # Use Command Module
+      - name: Run metricbeat modules enable docker
+        command: metricbeat modules enable docker
+
+      # Use Command Module
+      - name: Run metricbeat setup command
+        command: metricbeat setup
+
+      # Use Command Module
+      - name: Start metricbeat
+        command: service metricbeat start
